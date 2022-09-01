@@ -5,14 +5,16 @@
 from openpyxl import load_workbook, Workbook, worksheet
 from datetime import datetime
 
+
 def openExcel(filename: str) -> list:
     """ filename must contain extension """
     wb = load_workbook(filename=filename)
     return wb, wb.sheetnames
 
+
 def readNeis(wb: Workbook) -> dict:
     sheet = wb.active
-    
+
     result = dict()
 
     values = list(sheet.values)
@@ -25,13 +27,13 @@ def readNeis(wb: Workbook) -> dict:
             result[date].append(value)
         else:
             result[date] = [value]
-    
+
     return result
 
 
 def readLedger(wb: Workbook, sheetnames: list) -> dict:
     result = dict()
-    
+
     for sheetname in sheetnames:
         sheet = wb[sheetname]
         values = list(sheet.values)
@@ -40,22 +42,14 @@ def readLedger(wb: Workbook, sheetnames: list) -> dict:
             date = values[i][0]
             price = values[i][1]
             names = values[i][2]
-            
-            if date == None:
+
+            if date is None:
                 break
 
             if date in result:
                 result[date].append([sheetname, names, price])
             else:
                 result[date] = [[sheetname, names, price]]
-
-        #     if date in data:
-        #         data[date].append([names, price])
-        #     else:
-        #         data[date] = [[names, price]]
-
-        # result[sheetname] = data
-
     return result
 
 
@@ -77,5 +71,7 @@ if __name__ == '__main__':
         print()
 
 """
-wb, sheetnames = openExcel("특근매식비장부.xlsx")
-print(readLedger(wb, sheetnames))
+# wb, sheetnames = openExcel("../특근매식비장부.xlsx")
+# result = readLedger(wb, sheetnames)
+#
+# print(result)

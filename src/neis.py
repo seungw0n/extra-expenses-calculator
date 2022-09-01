@@ -2,20 +2,23 @@
 from datetime import datetime
 from excel import openExcel, readNeis
 
+
 def isWeekday(d: str) -> bool:
     """ 주말인지 아닌지 확인 """
     date = datetime.strptime(d, "%Y.%m.%d")
     return True if date.weekday() <= 4 else False
 
+
 def isValidStartTime(targetHour: int, targetMin: int, startHour: int, startMin: int) -> bool:
     """ targetHour:targetMin 일과시간 후 부터만 특근매식비 지원 """
     if startHour > targetHour:
         return True
-    
+
     if startHour == targetHour and startMin >= targetMin:
         return True
-    
+
     return False
+
 
 def isValid(date: str, totalHour: int, targetHour: int, targetMin: int, startHour: int, startMin: int) -> bool:
     """ 특근매식비를 받을 수 있는 조건인지 확인 함
@@ -26,8 +29,9 @@ def isValid(date: str, totalHour: int, targetHour: int, targetMin: int, startHou
     if totalHour >= 1:
         if isWeekday(date) and isValidStartTime(targetHour, targetMin, startHour, startMin):
             return True
-    
+
     return False
+
 
 def neisLog(filename: str, targetHour: int, targetMin: int) -> tuple:
     """ NEIS 초과근무확인에서 특근매식비 지급여부를 나눔 """
@@ -57,14 +61,13 @@ def neisLog(filename: str, targetHour: int, targetMin: int) -> tuple:
                 validNames.append(name)
             else:
                 invalidValues.append(v)
-        
+
         validLog[key] = validValues
         validNamesLog[key] = validNames
         invalidLog[key] = invalidValues
-    
+
     return validLog, validNamesLog, invalidLog
 
 
-
-c, w = neisLog("초과근무확인(7월분_나이스원본).xlsx", 16, 50)
-print(c)
+# c, w = neisLog("초과근무확인(7월분_나이스원본).xlsx", 16, 50)
+# print(c)
