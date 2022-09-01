@@ -28,13 +28,13 @@ def readNeis(wb: Workbook) -> dict:
     
     return result
 
+
 def readLedger(wb: Workbook, sheetnames: list) -> dict:
     result = dict()
-
+    
     for sheetname in sheetnames:
         sheet = wb[sheetname]
         values = list(sheet.values)
-        data = dict()
 
         for i in range(1, len(values)):
             date = values[i][0]
@@ -44,14 +44,21 @@ def readLedger(wb: Workbook, sheetnames: list) -> dict:
             if date == None:
                 break
 
-            if date in data:
-                data[date].append([names, price])
+            if date in result:
+                result[date].append([sheetname, names, price])
             else:
-                data[date] = [[names, price]]
+                result[date] = [[sheetname, names, price]]
 
-        result[sheetname] = data
+        #     if date in data:
+        #         data[date].append([names, price])
+        #     else:
+        #         data[date] = [[names, price]]
+
+        # result[sheetname] = data
 
     return result
+
+
 """
 if __name__ == '__main__':
     # print(openExcel("7월 특근매식비.xlsx"))
@@ -70,3 +77,5 @@ if __name__ == '__main__':
         print()
 
 """
+wb, sheetnames = openExcel("특근매식비장부.xlsx")
+print(readLedger(wb, sheetnames))

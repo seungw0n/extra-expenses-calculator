@@ -29,37 +29,42 @@ def isValid(date: str, totalHour: int, targetHour: int, targetMin: int, startHou
     
     return False
 
-def overworkLog(filename: str, targetHour: int, targetMin: int) -> tuple:
+def neisLog(filename: str, targetHour: int, targetMin: int) -> tuple:
     """ NEIS 초과근무확인에서 특근매식비 지급여부를 나눔 """
     wb, _ = openExcel(filename)
     total = readNeis(wb)
 
-    correctLog = dict()
-    wrongLog = dict()
+    validLog = dict()
+    validNamesLog = dict()
+    invalidLog = dict()
 
     for key, val in total.items():
-        correctValues = []
-        wrongValues = []
+        validValues = []
+        validNames = []
+        invalidValues = []
 
         for v in val:  # [이름, 시작시간, 끝난시간, 총합]
+            name = v[0].split("(")[0]
             startHour = int(v[1].split(":")[0])
             startMin = int(v[1].split(":")[1])
             totalHour = int(v[3].split(':')[0])
             # totalMin = int(v[3].split(':')[1])
 
             validation = isValid(key, totalHour, targetHour, targetMin, startHour, startMin)
-
+            v[0] = name  # change name 
             if validation:
-                correctValues.append(v)
+                validValues.append(v)
+                validNames.append(name)
             else:
-                wrongValues.append(v)
-
-        correctLog[key] = correctValues
-        wrongLog[key] = wrongValues
+                invalidValues.append(v)
+        
+        validLog[key] = validValues
+        validNamesLog[key] = validNames
+        invalidLog[key] = invalidValues
     
-    return correctLog, wrongLog
+    return validLog, validNamesLog, invalidLog
 
 
 
-c, w = overworkLog("초과근무확인(7월분_나이스원본).xlsx", 16, 50)
+c, w = neisLog("초과근무확인(7월분_나이스원본).xlsx", 16, 50)
 print(c)
