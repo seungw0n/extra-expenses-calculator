@@ -14,7 +14,12 @@ class Ledger:
         self.price = price
 
         numEmployees = len(employeeNames)
-        self.isValidPrice = self.price / numEmployees <= 8000
+        isValidPrice = self.price / numEmployees <= 8000
+        
+        self.overPrice = 0
+        if not isValidPrice:
+            self.overPrice = self.price - (numEmployees * 8000)
+        
 
     def __str__(self) -> str:
         return "날짜: " + self.date + " 음식점: " + self.restaurantName + " 교직원: " + str(self.employeeNames) + " 가격: " + str(self.price)

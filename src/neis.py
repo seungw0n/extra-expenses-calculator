@@ -9,6 +9,18 @@ def isWeekday(d: str) -> bool:
     return True if date.weekday() <= 4 else False
 
 
+def getTotalTime(startHour: int, startMin: int, endHour: int, endMin: int) -> tuple:
+    """ 초과근무시간 합 구하는 함수 """
+    totalHour = endHour - startHour
+    totalMin = endMin - endHour
+
+    if totalMin < 0:
+        totalHour -= 1
+        totalMin = 60 + totalMin
+    
+    return totalHour, totalMin
+
+
 def isValidStartTime(targetHour: int, targetMin: int, startHour: int, startMin: int) -> bool:
     """ targetHour:targetMin 일과시간 후 부터만 특근매식비 지원 """
     if startHour > targetHour:
@@ -27,7 +39,7 @@ def isValid(date: str, totalHour: int, targetHour: int, targetMin: int, startHou
         주말: 초과근무 1시간 이상
     """
     if totalHour >= 1:
-        if isWeekday(date) and isValidStartTime(targetHour, targetMin, startHour, startMin):
+        if not isWeekday(date) or (isWeekday(date) and isValidStartTime(targetHour, targetMin, startHour, startMin)):
             return True
 
     return False
@@ -51,8 +63,9 @@ def neisLog(filename: str, targetHour: int, targetMin: int) -> tuple:
             name = v[0].split("(")[0]
             startHour = int(v[1].split(":")[0])
             startMin = int(v[1].split(":")[1])
-            totalHour = int(v[3].split(':')[0])
-            # totalMin = int(v[3].split(':')[1])
+            endHour = int(v[2].split(":")[0])
+            endMin = int(v[2].split(":")[1])
+            totalHour, totalMin = getTotalTime(startHour=startHour, startMin=startMin, endHour=endHour, endMin=endMin)
 
             validation = isValid(key, totalHour, targetHour, targetMin, startHour, startMin)
             v[0] = name  # change name 
@@ -69,5 +82,5 @@ def neisLog(filename: str, targetHour: int, targetMin: int) -> tuple:
     return validLog, validNamesLog, invalidLog
 
 
-# c, w = neisLog("초과근무확인(7월분_나이스원본).xlsx", 16, 50)
-# print(c)
+# valid, validNames, invalid = neisLog("./files/초과근무확인8월분.xlsx", 16, 50)
+# print(validNames)

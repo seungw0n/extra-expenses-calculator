@@ -21,7 +21,7 @@ def readNeis(wb: Workbook) -> dict:
 
     for i in range(2, len(values)):
         date = values[i][3]
-        value = [values[i][2], values[i][8], values[i][9], values[i][10]]
+        value = [values[i][2], values[i][8], values[i][9]]
 
         if date in result:
             result[date].append(value)
