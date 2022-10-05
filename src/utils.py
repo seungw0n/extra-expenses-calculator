@@ -1,13 +1,10 @@
-from neis import neisLog
-from restaurant import restaurantLog
+from src.neis import getValidList
+from src.restaurant import restaurantLog
 
 
 def run(neisFilename: str, restaurantFilename: str):
-    validLog, validEmployeeNames, invalidLog = neisLog(filename=neisFilename, targetHour=16, targetMin=50)
+    validLog, validEmployeeNames, invalidLog = getValidList(filename=neisFilename, officeHour=16, officeMin=50)
     ledgers = restaurantLog(filename=restaurantFilename)
-
-    # sort by date
-    ledgers.sort(key=lambda x: x.date)
 
     invalidEmployees = list()
 
@@ -22,18 +19,19 @@ def run(neisFilename: str, restaurantFilename: str):
         validNames = validEmployeeNames[date]
 
         for name in employeeNames:  # 특근매식비 지급 대상 아닌 사람이 먹었을 경우
-            if name == "노종미":
-                print(ledger)
             if name in validNames:
                 validEmployeeNames[date].remove(name)
             else:
                 invalidEmployees.append([date, name, ledger.restaurantName, "이유: 특근매식비 지급 대상이 아님"])
-    # 방학 : 7월 20일
-    # 개학 : 8월 17일
+
     for n in invalidEmployees:
         print(n)
+        for invalid in invalidLog[n[0]]:
+            if invalid[0] == n[1]:
+                print("\t", "시작시간", invalid[1], ":", invalid[2], "종료시간", invalid[3], ":", invalid[4])
+
     # print(validEmployeeNames)
 
-run("./files/초과근무확인8월분.xlsx", "./files/8월 특근매식비장부(수정).xlsx")
+run("../files/202209/초과근무확인 9월.xlsx", "../files/202209/9월 특근매식비장부.xlsx")
 
 

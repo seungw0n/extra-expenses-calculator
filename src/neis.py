@@ -1,6 +1,20 @@
 # @author: seungw0n
 from datetime import datetime
-from excel import openExcel, readNeis
+from src.excel import openExcel, readNeis
+
+"""
+Overview: NEIS 에서 발급받은 초과근무확인 엑셀을 이용하여 특근매식비 지급 대상인지 아닌지 확인
+
+시작시간과 종료시간이 00:00 일 경우는 초과근무를 하지 않은 경우
+
+    근무일
+        1. 초과근무는 일과시간 이후 부터 계산됨
+        2. 실제초과근무시간의 종료시간 - 시작시간이 1시간 이상 일 경우 지급 대상
+
+    휴일
+        1. 주말 (토,일)일 경우만 계산됨, 그 이후 다른 휴일은 적용 안 됨
+        2. 실제초과근무시간의 종료시간 - 시작시간이 1시간 이상 일 경우 지급 대상
+"""
 
 
 def isWeekday(d: str) -> bool:
@@ -9,10 +23,21 @@ def isWeekday(d: str) -> bool:
     return True if date.weekday() <= 4 else False
 
 
-def getTotalTime(startHour: int, startMin: int, endHour: int, endMin: int) -> tuple:
+def isValidStartTime(officeHour: int, officeMin: int, startHour: int, startMin: int) -> bool:
+    """ officeHour:officeMin 일과시간 후 부터만 특근매식비 지원 """
+    if startHour > officeHour:
+        return True
+
+    if startHour == officeHour and startMin >= officeMin:
+        return True
+
+    return False
+
+
+def getOvertime(startHour: int, startMin: int, endHour: int, endMin: int) -> tuple:
     """ 초과근무시간 합 구하는 함수 """
     totalHour = endHour - startHour
-    totalMin = endMin - endHour
+    totalMin = endMin - startMin
 
     if totalMin < 0:
         totalHour -= 1
@@ -21,66 +46,49 @@ def getTotalTime(startHour: int, startMin: int, endHour: int, endMin: int) -> tu
     return totalHour, totalMin
 
 
-def isValidStartTime(targetHour: int, targetMin: int, startHour: int, startMin: int) -> bool:
-    """ targetHour:targetMin 일과시간 후 부터만 특근매식비 지원 """
-    if startHour > targetHour:
-        return True
-
-    if startHour == targetHour and startMin >= targetMin:
-        return True
-
-    return False
-
-
-def isValid(date: str, totalHour: int, targetHour: int, targetMin: int, startHour: int, startMin: int) -> bool:
-    """ 특근매식비를 받을 수 있는 조건인지 확인 함
-    조건
-        평일: 일과시간 이후 초과근무 1시간 이상
-        주말: 초과근무 1시간 이상
-    """
-    if totalHour >= 1:
-        if not isWeekday(date) or (isWeekday(date) and isValidStartTime(targetHour, targetMin, startHour, startMin)):
-            return True
-
-    return False
-
-
-def neisLog(filename: str, targetHour: int, targetMin: int) -> tuple:
-    """ NEIS 초과근무확인에서 특근매식비 지급여부를 나눔 """
+def getValidList(filename: str, officeHour: int, officeMin: int):
     wb, _ = openExcel(filename)
-    total = readNeis(wb)
+    data = readNeis(wb)
+    """
+        data = { "날짜" : [ [이름, 시작시간, 종료시간], ....], "날짜" :.. }
+    """
 
     validLog = dict()
-    validNamesLog = dict()
+    validNames = dict()
     invalidLog = dict()
 
-    for key, val in total.items():
-        validValues = []
-        validNames = []
-        invalidValues = []
+    for date, lst in data.items():
+        validLog[date] = []
+        validNames[date] = []
+        invalidLog[date] = []
 
-        for v in val:  # [이름, 시작시간, 끝난시간, 총합]
-            name = v[0].split("(")[0]
-            startHour = int(v[1].split(":")[0])
-            startMin = int(v[1].split(":")[1])
-            endHour = int(v[2].split(":")[0])
-            endMin = int(v[2].split(":")[1])
-            totalHour, totalMin = getTotalTime(startHour=startHour, startMin=startMin, endHour=endHour, endMin=endMin)
+        for datum in lst:
+            name, start, end = datum[0], datum[1], datum[2]
+            name = name.split("(")[0]
+            startHour = int(start.split(":")[0])
+            startMin = int(start.split(":")[1])
+            endHour = int(end.split(":")[0])
+            endMin = int(end.split(":")[1])
 
-            validation = isValid(key, totalHour, targetHour, targetMin, startHour, startMin)
-            v[0] = name  # change name 
-            if validation:
-                validValues.append(v)
-                validNames.append(name)
+            flag = False  # 지급여부대상
+
+            if isWeekday(date):  # 평일
+                if isValidStartTime(officeHour, officeMin, startHour, startMin) and getOvertime(startHour, startMin, endHour, endMin)[0] >= 1:
+                    flag = True
+            else:  # 주말
+                if getOvertime(startHour, startMin, endHour, endMin)[0] >= 1:
+                    flag = True
+
+            if flag:
+                validLog[date].append([name, startHour, startMin, endHour, endMin])
+                validNames[date].append(name)
             else:
-                invalidValues.append(v)
+                invalidLog[date].append([name, startHour, startMin, endHour, endMin])
 
-        validLog[key] = validValues
-        validNamesLog[key] = validNames
-        invalidLog[key] = invalidValues
-
-    return validLog, validNamesLog, invalidLog
+    return validLog, validNames, invalidLog
 
 
-# valid, validNames, invalid = neisLog("./files/초과근무확인8월분.xlsx", 16, 50)
-# print(validNames)
+# valid, validNames, invalid = getValidList("../files/202209/초과근무확인 9월.xlsx", 16, 50)
+# for k, v in valid.items():
+#     print("날짜: " + k)
+#     print("\t", v)
